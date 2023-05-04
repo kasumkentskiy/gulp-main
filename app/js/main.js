@@ -1,0 +1,1 @@
+const popa = document.querySelectorAll('.sueta');
