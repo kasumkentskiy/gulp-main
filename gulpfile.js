@@ -6,18 +6,64 @@ const uglify = require('gulp-uglify-es').default;
 const browserSync = require('browser-sync').create();
 const autoprefixer = require('gulp-autoprefixer');
 const clean = require('gulp-clean');
+const avif = require('gulp-avif');
+const webp = require('gulp-webp');
+const imagemin = require('gulp-imagemin');
+const fonter = require('gulp-fonter');
+const ttf2woff2 = require('gulp-ttf2woff2');
+const newer = require('gulp-newer');
+const svgSprite = require('gulp-svg-sprite');
 
 
+function fonts() {
+  return src('app/fonts/src/*.*')
+    .pipe(fonter({
+      formats: ['woff', 'ttf']
+    }))
+    .pipe(src('app/fonts/*.ttf'))
+    .pipe(ttf2woff2())
+    .pipe(dest('app/fonts'))
+}
 
+function images() {
+  return src(['app/images/src/*.*', '!app/images/src/*.svg'])
+    .pipe(newer('app/images'))
+    .pipe(avif({ quality: 50 }))
 
-function cleanDist () {
+    .pipe(src('app/images/src/*.*'))
+    .pipe(newer('app/images'))
+    .pipe(webp())
+
+    .pipe(src('app/images/src/*.*'))
+    .pipe(newer('app/images'))
+    .pipe(imagemin())
+
+    .pipe(dest('app/images'))
+}
+
+function cleanDist() {
   return src('dist')
     .pipe(clean())
 }
+// function sprite() {
+//   return src('app/images/*.svg')
+//     .pipe(svgSprite({
+//       mode: {
+//         stack: {
+//           sprite: '../sprite.svg',
+//           example: true
+//         }
+//       }
+//     }))
+//     .pipe(dest('app/images'))
+// }
 
 function scripts() {
   return src([
-    'node_modules/swiper/swiper-bundle.js',
+  //  'node_modules/tiny-slider/dist/tiny-slider.js',
+
+
+
     'app/js/main.js'
   ])
 
@@ -29,7 +75,7 @@ function scripts() {
 
 function styles() {
   return src('app/scss/style.scss')
-    .pipe(autoprefixer({ overrideBrowserList: ['last 10 version']}))
+    .pipe(autoprefixer({ overrideBrowserList: ['last 10 version'] }))
     .pipe(concat('style.min.css'))
     .pipe(scss({ outputStyle: 'compressed' }))
     .pipe(dest('app/css'))
@@ -37,32 +83,42 @@ function styles() {
 }
 
 function watching() {
-  watch(['app/scss/style.scss'], styles)
-  watch(['app/js/main.js'], scripts)
-  watch(['app/*.html']).on('change', browserSync.reload)
-}
-
-function browsersync() {
   browserSync.init({
     server: {
       baseDir: "app/"
-    }
+    },
+    notify: false,
   });
+  watch(['app/scss/style.scss'], styles)
+  watch(['app/images/src'], images)
+  watch(['app/js/main.js'], scripts)
+  watch(['app/*.html']).on('change', browserSync.reload);
 }
+
+
 
 function building() {
   return src([
     'app/css/style.min.css',
+    'app/images/*.*',
+    'app/images/*.svg',
+    '!app/images/stack',
+    // 'app/images/sprite.svg',
+    'app/fonts/*.*',
     'app/js/main.min.js',
     'app/**/*.html'
-  ], {base: 'app'})
+  ], { base: 'app' })
     .pipe(dest('dist'))
 }
 
 exports.styles = styles;
+exports.images = images;
+exports.fonts = fonts;
+// exports.sprite = sprite;
 exports.scripts = scripts;
 exports.watching = watching;
-exports.browsersync = browsersync;
+exports.building = building;
+
 
 exports.build = series(cleanDist, building);
-exports.default = parallel(styles, scripts, browsersync, watching);
+exports.default = parallel(styles, images, scripts, watching);
