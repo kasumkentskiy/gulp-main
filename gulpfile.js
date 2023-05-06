@@ -31,7 +31,7 @@ function images() {
     .pipe(avif({ quality: 50 }))
 
     .pipe(src('app/images/src/*.*'))
-    .pipe(newer('app/images'))
+    .pipe(newer('app/images/webp-images'))
     .pipe(webp())
 
     .pipe(src('app/images/src/*.*'))
@@ -121,4 +121,4 @@ exports.building = building;
 
 
 exports.build = series(cleanDist, building);
-exports.default = parallel(styles, images, scripts, watching);
+exports.default = parallel(styles, images, scripts, fonts, watching);
